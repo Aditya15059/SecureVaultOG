@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Encrypt from './pages/Encrypt';
+import Decrypt from './pages/Decrypt';
 import Steganography from './pages/Steganography';
 import Detection from './pages/Detection';
 import Files from './pages/Files';
@@ -23,6 +24,7 @@ function App() {
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/encrypt" element={<Encrypt />} />
+          <Route path="/decrypt" element={<Decrypt />} />
           <Route path="/steganography" element={<Steganography />} />
           <Route path="/detection" element={<Detection />} />
           <Route path="/files" element={<Files />} />

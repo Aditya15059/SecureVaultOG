@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Lock, Image, ShieldAlert, Folder, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Lock, Unlock, Image, ShieldAlert, Folder, Settings, LogOut } from 'lucide-react';
 
 const DashboardLayout = () => {
   const location = useLocation();
@@ -8,6 +8,7 @@ const DashboardLayout = () => {
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
     { name: 'Encrypt Message', path: '/encrypt', icon: <Lock size={20} /> },
+    { name: 'Decrypt Message', path: '/decrypt', icon: <Unlock size={20} /> },
     { name: 'Hide in Image', path: '/steganography', icon: <Image size={20} /> },
     { name: 'Detect Stego (AI)', path: '/detection', icon: <ShieldAlert size={20} /> },
     { name: 'My Files', path: '/files', icon: <Folder size={20} /> },
