@@ -1,0 +1,228 @@
+/* ===== LOGIN PAGE STYLES ===== */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-ambient-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, var(--color-tertiary-dim) 0%, transparent 60%);
+  filter: blur(90px);
+  border-radius: 50%;
+  top: 40%;
+  left: 40%;
+  opacity: 0.8;
+  animation: glowPulse 10s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  position: relative;
+  z-index: 10;
+}
+
+/* ===== LOGIN CARD ===== */
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 3rem 2.5rem;
+  position: relative;
+  z-index: 10;
+  border: 1px solid var(--color-primary-dim);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+/* ===== SHAKE ANIMATION ===== */
+.form-shake {
+  animation: formShake 500ms ease;
+}
+
+@keyframes formShake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-8px); }
+  30% { transform: translateX(8px); }
+  45% { transform: translateX(-6px); }
+  60% { transform: translateX(6px); }
+  75% { transform: translateX(-3px); }
+  90% { transform: translateX(3px); }
+}
+
+/* ===== ERROR INPUT STATE ===== */
+.input-control.input-error {
+  border-bottom-color: #ef4444 !important;
+  box-shadow: 0 2px 15px -2px rgba(239, 68, 68, 0.25) !important;
+}
+
+.input-control.input-error::placeholder {
+  color: rgba(239, 68, 68, 0.4);
+}
+
+/* ===== ERROR BANNER ===== */
+.login-error-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+.login-error-banner-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.login-error-banner-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.login-error-suggestion {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary) !important;
+  text-decoration: underline !important;
+  text-underline-offset: 2px;
+}
+
+.login-error-suggestion:hover {
+  color: #fff !important;
+}
+
+/* ===== FORGOT LINK ===== */
+.login-forgot-link {
+  font-size: 0.7rem;
+  color: var(--color-secondary) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-decoration: none !important;
+  border: none !important;
+  transition: all 0.3s ease;
+}
+
+.login-forgot-link:hover {
+  color: #fff !important;
+}
+
+.login-forgot-link--glow {
+  animation: forgotGlow 1.5s ease-in-out infinite;
+  color: #f59e0b !important;
+}
+
+@keyframes forgotGlow {
+  0%, 100% {
+    text-shadow: 0 0 4px rgba(245, 158, 11, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 12px rgba(245, 158, 11, 0.6), 0 0 24px rgba(245, 158, 11, 0.3);
+  }
+}
+
+/* ===== ATTEMPTS WARNING BADGE ===== */
+.login-attempts-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #f59e0b;
+  margin-bottom: 1.25rem;
+  width: fit-content;
+}
+
+/* ===== LOCKOUT OVERLAY ===== */
+.login-lockout-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 3, 15, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  border-radius: var(--radius-lg);
+}
+
+.login-lockout-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+  padding: 2rem;
+}
+
+.login-lockout-content h3 {
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
+  color: #ef4444;
+}
+
+.login-lockout-icon {
+  color: #ef4444;
+  animation: lockPulse 2s ease-in-out infinite;
+}
+
+@keyframes lockPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.4));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(239, 68, 68, 0.6));
+    transform: scale(1.05);
+  }
+}
+
+.login-lockout-timer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius-full);
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ef4444;
+  letter-spacing: 0.08em;
+}
+
+.login-lockout-actions {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 2rem 1.5rem;
+  }
+  .login-header h1 {
+    font-size: 2.25rem !important;
+  }
+}
