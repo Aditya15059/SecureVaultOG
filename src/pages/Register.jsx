@@ -16,17 +16,37 @@ const Register = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
+  const [error, setError] = useState('');
+  const [username, setUsername] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+
   const handleNext = (e) => {
     e.preventDefault();
     setStep(2);
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 2000);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email: regEmail, password }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('token', data.token);
+        navigate('/dashboard');
+      } else {
+        setError(data.message || 'Registration failed. Please try again.');
+      }
+    } catch {
+      setError('Connection error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStrength = (pass) => {
@@ -101,7 +121,7 @@ const Register = () => {
                 <label>Master Codename</label>
                 <div style={{ position: 'relative' }}>
                   <User size={16} className="icon-cyber" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-dim)' }} />
-                  <input type="text" className="input-control" placeholder="operator_7" style={{ paddingLeft: '2.5rem', background: 'rgba(0,0,0,0.3)' }} required />
+                  <input type="text" className="input-control" placeholder="operator_7" style={{ paddingLeft: '2.5rem', background: 'rgba(0,0,0,0.3)' }} value={username} onChange={(e) => setUsername(e.target.value)} required />
                 </div>
               </div>
 
@@ -109,7 +129,7 @@ const Register = () => {
                 <label>Secure Email</label>
                 <div style={{ position: 'relative' }}>
                   <Mail size={16} className="icon-cyber" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-dim)' }} />
-                  <input type="email" className="input-control" placeholder="operator@securevault.io" style={{ paddingLeft: '2.5rem', background: 'rgba(0,0,0,0.3)' }} required />
+                  <input type="email" className="input-control" placeholder="operator@securevault.io" style={{ paddingLeft: '2.5rem', background: 'rgba(0,0,0,0.3)' }} value={regEmail} onChange={(e) => setRegEmail(e.target.value)} required />
                 </div>
               </div>
 
@@ -195,6 +215,12 @@ const Register = () => {
                   </motion.span>
                 )}
               </div>
+
+              {error && (
+                <div style={{ marginBottom: '1rem', padding: '0.75rem 1rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#ef4444', fontSize: '0.875rem' }}>
+                  {error}
+                </div>
+              )}
 
               <KineticButton type="submit" loading={loading} disabled={!passwordsMatch || strength < 50} style={{ width: '100%', padding: '1.1rem' }}>
                 Initialize Vault <Zap size={18} fill="currentColor" />
