@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Lock, Unlock, Image, ShieldAlert, Settings, LogOut, Fingerprint, Users } from 'lucide-react';
+import { LayoutDashboard, Lock, Unlock, Image, ShieldAlert, Settings, LogOut, Fingerprint, Users, Bot } from 'lucide-react';
 
 const DashboardLayout = () => {
   const location = useLocation();
@@ -11,6 +11,7 @@ const DashboardLayout = () => {
     { name: 'Decrypt Message', path: '/decrypt', icon: <Unlock size={20} /> },
     { name: 'Hide in Image', path: '/steganography', icon: <Image size={20} /> },
     { name: 'Detect Stego (AI)', path: '/detection', icon: <ShieldAlert size={20} /> },
+    { name: 'ZynoStegra Agent', path: '/zynostegra', icon: <Bot size={20} /> },
     { name: 'Team & About', path: '/about', icon: <Users size={20} /> },
     { name: 'Settings', path: '/settings', icon: <Settings size={20} /> },
   ];

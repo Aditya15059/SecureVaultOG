@@ -12,6 +12,7 @@ import Steganography from './pages/Steganography';
 import Detection from './pages/Detection';
 
 import About from './pages/About';
+import ZynoStegra from './pages/ZynoStegra';
 
 import Settings from './pages/Settings';
 import DashboardLayout from './components/DashboardLayout';
@@ -74,6 +75,7 @@ function App() {
             <Route path="/detection" element={<Detection />} />
             
             <Route path="/about" element={<About />} />
+            <Route path="/zynostegra" element={<ZynoStegra />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Routes>
