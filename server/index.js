@@ -2,9 +2,10 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-import mongoose from 'mongoose';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import sequelize from './db.js';
+import './models/User.js'; // register model before sync
 import authRoutes from './routes/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -45,18 +46,16 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
-// ─── MongoDB connection ───────────────────────────────────────────────────────
-const mongoUri = process.env.MONGODB_URI;
-if (!mongoUri) {
-  console.error('MONGODB_URI environment variable is not set.');
-  process.exit(1);
-}
-
-mongoose
-  .connect(mongoUri)
-  .then(() => console.log('MongoDB connected'))
+// ─── Database connection (AWS RDS / PostgreSQL) ───────────────────────────────
+sequelize
+  .authenticate()
+  .then(() => {
+    console.log('PostgreSQL (RDS) connected');
+    return sequelize.sync({ alter: true });
+  })
+  .then(() => console.log('Database schema synced'))
   .catch((err) => {
-    console.error('MongoDB connection error:', err.message);
+    console.error('Database connection error:', err.message);
     process.exit(1);
   });
 

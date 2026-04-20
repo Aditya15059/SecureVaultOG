@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import rateLimit from 'express-rate-limit';
+import { Op } from 'sequelize';
 import User from '../models/User.js';
 
 const router = express.Router();
@@ -36,7 +37,6 @@ const otpLimiter = rateLimit({
 function signToken(userId) {
   return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
-
 // ─── Helper: send OTP email ──────────────────────────────────────────────────
 async function sendOtpEmail(to, otp) {
   const transporter = nodemailer.createTransport({
@@ -76,16 +76,15 @@ router.post('/register', authLimiter, async (req, res) => {
       return res.status(400).json({ message: 'Password must be at least 6 characters.' });
     }
 
-    const existing = await User.findOne({ email: email.toLowerCase() });
+    const existing = await User.findOne({ where: { email: email.toLowerCase() } });
     if (existing) {
       return res.status(409).json({ message: 'An account with that email already exists.' });
     }
 
-    const user = new User({ email: email.toLowerCase(), password, username });
-    await user.save();
+    const user = await User.create({ email: email.toLowerCase(), password, username });
 
-    const token = signToken(user._id);
-    res.status(201).json({ token, user: { id: user._id, email: user.email } });
+    const token = signToken(user.id);
+    res.status(201).json({ token, user: { id: user.id, email: user.email } });
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ message: 'Server error. Please try again.' });
@@ -101,7 +100,7 @@ router.post('/login', authLimiter, async (req, res) => {
       return res.status(400).json({ message: 'Email and password are required.' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ where: { email: email.toLowerCase() } });
     if (!user) {
       return res.status(404).json({ type: 'not-found', message: 'No account found with that email address.' });
     }
@@ -138,11 +137,11 @@ router.post('/login', authLimiter, async (req, res) => {
 
     // Success — reset counters
     user.loginAttempts = 0;
-    user.lockUntil = undefined;
+    user.lockUntil = null;
     await user.save();
 
-    const token = signToken(user._id);
-    res.json({ token, user: { id: user._id, email: user.email } });
+    const token = signToken(user.id);
+    res.json({ token, user: { id: user.id, email: user.email } });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ message: 'Server error. Please try again.' });
@@ -156,7 +155,7 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
     if (!email) return res.status(400).json({ message: 'Email is required.' });
 
     // Always respond with 200 for security (don't reveal whether email exists)
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ where: { email: email.toLowerCase() } });
     if (user) {
       if ((user.resetAttempts || 0) >= 3) {
         return res.json({ message: 'If that email exists, a code was sent.' });
@@ -195,7 +194,7 @@ router.post('/verify-otp', authLimiter, async (req, res) => {
     const { email, otp } = req.body;
     if (!email || !otp) return res.status(400).json({ message: 'Email and OTP are required.' });
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ where: { email: email.toLowerCase() } });
     if (!user || !user.resetOtp || !user.resetOtpExpires) {
       return res.status(400).json({ message: 'Invalid or expired code.' });
     }
@@ -213,8 +212,8 @@ router.post('/verify-otp', authLimiter, async (req, res) => {
     const resetToken = crypto.randomBytes(32).toString('hex');
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
-    user.resetOtp = undefined;
-    user.resetOtpExpires = undefined;
+    user.resetOtp = null;
+    user.resetOtpExpires = null;
     user.resetToken = hashedToken;
     user.resetTokenExpires = new Date(Date.now() + RESET_TOKEN_EXPIRES_MS);
     user.resetAttempts = 0;
@@ -240,9 +239,11 @@ router.post('/reset-password', authLimiter, async (req, res) => {
 
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
     const user = await User.findOne({
-      email: email.toLowerCase(),
-      resetToken: hashedToken,
-      resetTokenExpires: { $gt: new Date() },
+      where: {
+        email: email.toLowerCase(),
+        resetToken: hashedToken,
+        resetTokenExpires: { [Op.gt]: new Date() },
+      },
     });
 
     if (!user) {
@@ -250,10 +251,10 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     }
 
     user.password = newPassword;
-    user.resetToken = undefined;
-    user.resetTokenExpires = undefined;
+    user.resetToken = null;
+    user.resetTokenExpires = null;
     user.loginAttempts = 0;
-    user.lockUntil = undefined;
+    user.lockUntil = null;
     await user.save();
 
     res.json({ message: 'Password updated successfully.' });
