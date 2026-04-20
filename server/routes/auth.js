@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
+import rateLimit from 'express-rate-limit';
 import User from '../models/User.js';
 
 const router = express.Router();
@@ -13,6 +14,23 @@ const OTP_EXPIRES_MS = 10 * 60 * 1000; // 10 minutes
 const RESET_TOKEN_EXPIRES_MS = 15 * 60 * 1000; // 15 minutes
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
+// ─── Per-route rate limiters ─────────────────────────────────────────────────
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many requests, please try again later.' },
+});
+
+const otpLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many OTP requests, please try again later.' },
+});
 
 // ─── Helper: create JWT ──────────────────────────────────────────────────────
 function signToken(userId) {
@@ -47,7 +65,7 @@ async function sendOtpEmail(to, otp) {
 }
 
 // ─── POST /api/auth/register ─────────────────────────────────────────────────
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
@@ -75,7 +93,7 @@ router.post('/register', async (req, res) => {
 });
 
 // ─── POST /api/auth/login ────────────────────────────────────────────────────
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -132,7 +150,7 @@ router.post('/login', async (req, res) => {
 });
 
 // ─── POST /api/auth/send-otp ─────────────────────────────────────────────────
-router.post('/send-otp', async (req, res) => {
+router.post('/send-otp', otpLimiter, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ message: 'Email is required.' });
@@ -172,7 +190,7 @@ router.post('/send-otp', async (req, res) => {
 });
 
 // ─── POST /api/auth/verify-otp ───────────────────────────────────────────────
-router.post('/verify-otp', async (req, res) => {
+router.post('/verify-otp', authLimiter, async (req, res) => {
   try {
     const { email, otp } = req.body;
     if (!email || !otp) return res.status(400).json({ message: 'Email and OTP are required.' });
@@ -210,7 +228,7 @@ router.post('/verify-otp', async (req, res) => {
 });
 
 // ─── POST /api/auth/reset-password ───────────────────────────────────────────
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', authLimiter, async (req, res) => {
   try {
     const { email, resetToken, newPassword } = req.body;
     if (!email || !resetToken || !newPassword) {
