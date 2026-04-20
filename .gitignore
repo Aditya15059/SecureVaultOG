@@ -1,10 +1,3 @@
-<<<<<<< HEAD
-node_modules
-dist
-.env
-.vite
-.DS_Store
-=======
 # Logs
 logs
 *.log
@@ -19,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Vite
+.vite
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -29,4 +30,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
->>>>>>> 1ed3295 (Initial commit - SecureVault)

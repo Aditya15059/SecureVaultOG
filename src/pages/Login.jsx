@@ -77,14 +77,14 @@ const Login = () => {
     }
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     clearErrors();
 
     // If locked out, do nothing
     if (lockUntil && Date.now() < lockUntil) return;
 
-    // --- SCENARIO 5: Empty fields ---
+    // --- Empty fields ---
     if (!email && !password) {
       setFieldErrors({ email: true, password: true });
       setError('Email and password are required');
@@ -107,7 +107,7 @@ const Login = () => {
       return;
     }
 
-    // --- SCENARIO 6: Invalid email format ---
+    // --- Invalid email format ---
     if (!isValidEmail(email)) {
       setFieldErrors({ email: true, password: false });
       setError('Please enter a valid email address');
@@ -116,56 +116,49 @@ const Login = () => {
       return;
     }
 
-    // --- SIMULATE AUTH LOGIC (no backend) ---
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
 
-      // Demo logic: "admin@securevault.io" / "admin123" = success
-      // "unknown@test.com" = email not found
-      // Anything else = invalid credentials
-      if (email === 'admin@securevault.io' && password === 'admin123') {
-        // Success path
+      if (res.ok) {
+        localStorage.setItem('token', data.token);
         clearErrors();
         setAttempts(0);
         navigate('/dashboard');
         return;
       }
 
-      // --- SCENARIO 4: Email not found ---
-      if (email === 'unknown@test.com') {
+      if (res.status === 404 || data.type === 'not-found') {
         setFieldErrors({ email: true, password: false });
-        setError('No account found with that email address.');
+        setError(data.message || 'No account found with that email address.');
         setErrorType('not-found');
         triggerShake();
         setPassword('');
-        return;
-      }
-
-      // --- SCENARIO 1/2/3: Wrong credentials (progressive) ---
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      setPassword('');
-      triggerShake();
-      setFieldErrors({ email: true, password: true });
-
-      if (newAttempts >= 5) {
-        // --- SCENARIO 3: Account locked ---
-        const lockTime = Date.now() + 15 * 60 * 1000; // 15 minutes
-        setLockUntil(lockTime);
-        setError('Account temporarily locked for 15 minutes. Reset your password or wait for unlock.');
+      } else if (res.status === 423 || data.type === 'locked') {
+        setLockUntil(data.lockUntil || Date.now() + 15 * 60 * 1000);
+        setError(data.message || 'Account temporarily locked for 15 minutes.');
         setErrorType('locked');
-      } else if (newAttempts >= 3) {
-        // --- SCENARIO 2: Warning with remaining attempts ---
-        const remaining = 5 - newAttempts;
-        setError(`Invalid credentials. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining before your account is temporarily locked.`);
-        setErrorType('credentials-warning');
       } else {
-        // --- SCENARIO 1: Standard invalid credentials ---
-        setError('Invalid credentials. Please check your email and password.');
-        setErrorType('credentials');
+        const newAttempts = (data.attempts || attempts) + 1;
+        setAttempts(newAttempts);
+        setPassword('');
+        triggerShake();
+        setFieldErrors({ email: true, password: true });
+        setError(data.message || 'Invalid credentials. Please check your email and password.');
+        setErrorType(data.type || 'credentials');
       }
-    }, 800);
+    } catch {
+      setError('Connection error. Please try again.');
+      setErrorType('credentials');
+      triggerShake();
+    } finally {
+      setLoading(false);
+    }
   };
 
   const isLocked = lockUntil && Date.now() < lockUntil;
