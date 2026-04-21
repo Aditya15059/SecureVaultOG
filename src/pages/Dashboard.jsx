@@ -1,14 +1,24 @@
 import React from 'react';
-import { Lock, FileLock2, ShieldAlert, Activity, Zap, Shield, Cloud, Binary, AudioWaveform, BrainCircuit } from 'lucide-react';
+import { Lock, FileLock2, ShieldAlert, Activity, Zap, Shield, Cloud, Binary, AudioWaveform, BrainCircuit, Monitor, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { TiltCard } from '../components/animations/TiltCard';
 import { SpotlightCard } from '../components/ui/SpotlightCard';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
   const stats = [
     { title: 'Encrypted Messages', value: '1,248', icon: <Lock size={24} color="var(--color-primary)" />, trend: '+12% this week', trendColor: 'var(--color-primary)' },
     { title: 'Secured Volumes', value: '342', icon: <FileLock2 size={24} color="var(--color-secondary)" />, trend: '+5% this week', trendColor: 'var(--color-primary)' },
     { title: 'AI Scans Run', value: '89', icon: <ShieldAlert size={24} color="var(--color-danger)" />, trend: '2 threats detected', trendColor: 'var(--color-danger)' },
+  ];
+
+  const securityStats = [
+    { label: 'Active Sessions', value: '3',  icon: <Monitor size={16} />,       color: 'var(--color-secondary)', path: '/security' },
+    { label: 'Threats Blocked', value: '1',  icon: <Shield size={16} />,         color: 'var(--color-primary)',   path: '/security' },
+    { label: 'Audit Events',    value: '8',  icon: <Activity size={16} />,       color: 'var(--color-tertiary)',  path: '/security' },
+    { label: 'Failed Logins',   value: '2',  icon: <AlertTriangle size={16} />,  color: '#f59e0b',                path: '/security' },
   ];
 
   const activities = [
@@ -68,6 +78,26 @@ const Dashboard = () => {
           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-success)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>System: Optimal</span>
         </motion.div>
       </header>
+
+      {/* Security Metrics Strip */}
+      <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+        {securityStats.map((s, i) => (
+          <button key={i} onClick={() => navigate(s.path)} style={{ all: 'unset', cursor: 'pointer', display: 'block' }}>
+            <div style={{ padding: '0.875rem 1.25rem', borderRadius: 'var(--radius-md)', background: 'var(--color-surface-container-lowest)', border: `1px solid ${s.color}25`, display: 'flex', alignItems: 'center', gap: '0.75rem', transition: 'border-color 0.25s', ':hover': { borderColor: s.color } }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = s.color}
+              onMouseLeave={e => e.currentTarget.style.borderColor = `${s.color}25`}
+            >
+              <div style={{ color: s.color, width: '32px', height: '32px', borderRadius: 'var(--radius-sm)', background: `${s.color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} className="icon-glow-pulse">
+                {s.icon}
+              </div>
+              <div>
+                <p style={{ margin: 0, fontFamily: 'monospace', fontSize: '1.25rem', fontWeight: 700 }}>{s.value}</p>
+                <p style={{ margin: 0, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-dim)' }}>{s.label}</p>
+              </div>
+            </div>
+          </button>
+        ))}
+      </motion.section>
 
       {/* Stats Grid */}
       <motion.section variants={staggerSettings} initial="hidden" animate="visible" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem', marginBottom: '2.5rem' }}>
