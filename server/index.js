@@ -17,7 +17,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 4000;
 if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGIN) {
-  throw new Error('CORS_ORIGIN must be set in production as a comma-separated list of allowed origins');
+  console.warn('[SecureVault] WARNING: CORS_ORIGIN is not set in production. All cross-origin browser requests will be blocked. Set the CORS_ORIGIN environment variable to the comma-separated list of allowed frontend origins (e.g. https://secure-vault-og.vercel.app).');
 }
 const defaultCorsOrigins = process.env.NODE_ENV === 'production'
   ? ''
@@ -34,6 +34,10 @@ app.use(cors({
     // Allow non-browser clients (curl/Postman/server-to-server) that do not send Origin.
     // Browser requests must still match explicit allowlisted origins; auth uses bearer tokens, not cookies.
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    // Emit a clear log so misconfigured CORS_ORIGIN is visible in server logs.
+    if (allowedOrigins.length === 0) {
+      console.error('[SecureVault] CORS blocked: CORS_ORIGIN is not configured. Set it to the frontend origin.');
+    }
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
