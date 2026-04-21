@@ -137,21 +137,40 @@ const ForgotPassword = () => {
     otpRefs.current[focusIdx].current?.focus();
   };
 
-  const handleVerifyOtp = () => {
+  const handleVerifyOtp = async () => {
+    setApiError('');
     const code = otp.join('');
     if (code.length < 6) {
       setOtpError('Please enter the complete 6-digit code');
       return;
     }
     setOtpLoading(true);
-    setTimeout(() => {
-      setOtpLoading(false);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp: code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setOtpError(data.error || 'Invalid verification code. Please try again.');
+        setOtp(Array(6).fill(''));
+        setOtpShake(true);
+        setTimeout(() => setOtpShake(false), 600);
+        otpRefs.current[0].current?.focus();
+        return;
+      }
+
       setOtpSuccess(true);
       setTimeout(() => {
         goToStep(2);
         setOtpSuccess(false);
       }, 1000);
-    }, 1000);
+    } catch {
+      setApiError('Unable to verify OTP right now');
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
   const handleResend = () => {
@@ -171,10 +190,6 @@ const ForgotPassword = () => {
     setApiError('');
     if (strength.score < 2) return;
     if (!passwordsMatch) return;
-    if (otp.join('').length < 6) {
-      setApiError('Please complete OTP verification first');
-      return;
-    }
 
     setResetLoading(true);
     try {

@@ -39,7 +39,7 @@ const Register = () => {
       const registerRes = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, codename }),
       });
       const registerData = await registerRes.json().catch(() => ({}));
       if (!registerRes.ok) {
@@ -59,10 +59,12 @@ const Register = () => {
         return;
       }
 
-      if (loginData.token) {
-        localStorage.setItem('securevault_token', loginData.token);
-        localStorage.setItem('token', loginData.token);
+      if (!loginData.token) {
+        setError('Account created, but no session token returned. Please login manually.');
+        navigate('/login');
+        return;
       }
+      localStorage.setItem('securevault_token', loginData.token);
       navigate('/dashboard');
     } catch {
       setError('Unable to reach authentication server');

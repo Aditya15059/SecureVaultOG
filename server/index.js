@@ -5,17 +5,24 @@ import dotenv from 'dotenv';
 
 import authRouter     from './routes/auth.js';
 import sessionsRouter from './routes/sessions.js';
-import filesRouter    from './routes/files.js';
+import filesRouter, { uploadSingleFile, uploadFileHandler } from './routes/files.js';
 import activityRouter from './routes/activity.js';
 import threatsRouter  from './routes/threats.js';
 import agentRouter    from './routes/agent.js';
+import { authMiddleware } from './middleware/authMiddleware.js';
 import { authLimiter, apiLimiter } from './middleware/rateLimiter.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,https://secure-vault-og.vercel.app')
+if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGIN) {
+  throw new Error('CORS_ORIGIN must be set in production as a comma-separated list of allowed origins');
+}
+const defaultCorsOrigins = process.env.NODE_ENV === 'production'
+  ? ''
+  : 'http://localhost:5173';
+const allowedOrigins = (process.env.CORS_ORIGIN || defaultCorsOrigins)
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
@@ -24,6 +31,8 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,https:
 app.use(helmet());
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow non-browser clients (curl/Postman/server-to-server) that do not send Origin.
+    // Browser requests must still match explicit allowlisted origins; auth uses bearer tokens, not cookies.
     if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error('Not allowed by CORS'));
   },
@@ -37,10 +46,7 @@ app.get('/', (_req, res) => res.send('SecureVault API is running 🚀'));
 app.use('/api/auth',     authLimiter, authRouter);
 app.use('/api/sessions', apiLimiter,  sessionsRouter);
 app.use('/api/files',    apiLimiter,  filesRouter);
-app.post('/api/upload',  apiLimiter,  (req, res, next) => {
-  req.url = '/upload';
-  filesRouter(req, res, next);
-});
+app.post('/api/upload',  apiLimiter, authMiddleware, uploadSingleFile, uploadFileHandler);
 app.use('/api/activity', apiLimiter,  activityRouter);
 app.use('/api/threats',  apiLimiter,  threatsRouter);
 app.use('/api/agent',    apiLimiter,  agentRouter);

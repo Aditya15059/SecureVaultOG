@@ -136,23 +136,49 @@ router.post('/forgot-password', async (req, res) => {
   res.json({ message: 'OTP sent', otp_demo: otp });
 });
 
-/* ── Verify OTP & reset password ── */
-router.post('/reset-password', async (req, res) => {
-  const { email, otp, new_password } = req.body;
+const getLatestResetRecord = async (email) => {
   const [userRows] = await db.query('SELECT id FROM users WHERE email = ?', [email?.toLowerCase().trim()]);
-  if (!userRows.length) return res.status(404).json({ error: 'Email not found' });
+  if (!userRows.length) return { error: { status: 404, message: 'Email not found' } };
 
   const userId = userRows[0].id;
   const [resetRows] = await db.query(
     'SELECT * FROM password_resets WHERE user_id = ? AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1',
     [userId]
   );
-  if (!resetRows.length) return res.status(400).json({ error: 'No valid OTP found or OTP expired' });
+  if (!resetRows.length) return { error: { status: 400, message: 'No valid OTP found or OTP expired' } };
 
   const record = resetRows[0];
-  if (record.attempts >= 3) return res.status(429).json({ error: 'Too many OTP attempts' });
+  if (record.attempts >= 3) return { error: { status: 429, message: 'Too many OTP attempts' } };
+  return { userId, record };
+};
 
-  const valid = await bcrypt.compare(otp, record.otp_hash);
+router.post('/verify-otp', async (req, res) => {
+  const { email, otp } = req.body;
+  const latestReset = await getLatestResetRecord(email);
+  if (latestReset.error) {
+    return res.status(latestReset.error.status).json({ error: latestReset.error.message });
+  }
+
+  const { record } = latestReset;
+  const valid = await bcrypt.compare(String(otp || ''), record.otp_hash);
+  if (!valid) {
+    await db.query('UPDATE password_resets SET attempts = attempts + 1 WHERE id = ?', [record.id]);
+    return res.status(401).json({ error: 'Invalid OTP' });
+  }
+
+  return res.json({ message: 'OTP verified' });
+});
+
+/* ── Verify OTP & reset password ── */
+router.post('/reset-password', async (req, res) => {
+  const { email, otp, new_password } = req.body;
+  const latestReset = await getLatestResetRecord(email);
+  if (latestReset.error) {
+    return res.status(latestReset.error.status).json({ error: latestReset.error.message });
+  }
+
+  const { userId, record } = latestReset;
+  const valid = await bcrypt.compare(String(otp || ''), record.otp_hash);
   if (!valid) {
     await db.query('UPDATE password_resets SET attempts = attempts + 1 WHERE id = ?', [record.id]);
     return res.status(401).json({ error: 'Invalid OTP' });

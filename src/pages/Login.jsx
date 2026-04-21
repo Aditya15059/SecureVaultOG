@@ -166,7 +166,6 @@ const Login = () => {
 
       if (data.token) {
         localStorage.setItem('securevault_token', data.token);
-        localStorage.setItem('token', data.token);
       }
       clearErrors();
       setAttempts(0);

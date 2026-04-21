@@ -25,7 +25,7 @@ const Files = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState('');
 
-  const token = localStorage.getItem('securevault_token') || localStorage.getItem('token') || '';
+  const token = localStorage.getItem('securevault_token') || '';
 
   const totalUsedBytes = useMemo(
     () => files.reduce((sum, file) => sum + (Number(file.file_size) || 0), 0),
