@@ -11,6 +11,8 @@ services:
         value: production
       - key: PORT
         value: 4000
+      # IMPORTANT: no trailing slash — browsers send origins without one.
+      # Wrong value or a trailing slash will silently block all API calls from the frontend.
       - key: CORS_ORIGIN
         value: https://secure-vault-og.vercel.app
       - key: MAX_UPLOAD_MB
@@ -39,5 +41,9 @@ services:
       - key: AWS_BUCKET_NAME
         sync: false
       # ── Server-side file encryption key ──
+      # MUST be a fixed 64-char hex string (= 32 bytes / AES-256).
+      # Example: openssl rand -hex 32
+      # WARNING: changing this key makes ALL previously uploaded files permanently unreadable.
+      # Set it ONCE in the Render dashboard and never rotate it unless you re-encrypt all files.
       - key: FILE_ENCRYPTION_KEY
         sync: false
