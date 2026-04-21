@@ -14,7 +14,7 @@ services:
       # IMPORTANT: no trailing slash — browsers send origins without one.
       # Wrong value or a trailing slash will silently block all API calls from the frontend.
       - key: CORS_ORIGIN
-        value: https://secure-vault-og.vercel.app
+        value: https://securevault-nu.vercel.app
       - key: MAX_UPLOAD_MB
         value: 10
       # ── Database (AWS RDS) — set these in the Render dashboard ──
