@@ -62,7 +62,7 @@ router.post('/', async (req, res) => {
 });
 
 /* ── Upload directly to S3 and store metadata in RDS ── */
-router.post('/upload', (req, res, next) => {
+const uploadSingleFile = (req, res, next) => {
   upload.single('file')(req, res, (error) => {
     if (error?.code === 'LIMIT_FILE_SIZE') {
       return res.status(413).json({ error: `File exceeds ${maxUploadMb}MB upload limit` });
@@ -70,9 +70,9 @@ router.post('/upload', (req, res, next) => {
     if (error) return next(error);
     return next();
   });
-});
+};
 
-router.post('/upload', async (req, res, next) => {
+router.post('/upload', uploadSingleFile, async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'File is required' });

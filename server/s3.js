@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 const REQUIRED_ENV = ['AWS_REGION', 'AWS_BUCKET_NAME', 'AWS_ACCESS_KEY', 'AWS_SECRET_KEY'];
+const MAX_SAFE_FILENAME_LENGTH = 120;
 
 function assertS3Config() {
   const missing = REQUIRED_ENV.filter((name) => !process.env[name]);
@@ -42,7 +43,7 @@ const s3 = new S3Client({
 const encryptionKey = parseEncryptionKey(process.env.FILE_ENCRYPTION_KEY || '');
 
 function sanitizeFileName(fileName) {
-  return fileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120);
+  return fileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, MAX_SAFE_FILENAME_LENGTH);
 }
 
 function encryptBuffer(buffer) {

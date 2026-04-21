@@ -1,7 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Download, Cloud, Eye, Trash2, HardDrive, UploadCloud, RefreshCcw, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+
+const formatDate = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown';
+  return date.toISOString().slice(0, 10);
+};
 
 const formatSize = (bytes) => {
   if (!Number.isFinite(bytes) || bytes < 1) return '0 B';
@@ -18,14 +24,14 @@ const Files = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState('');
 
-  const token = useMemo(() => localStorage.getItem('securevault_token') || localStorage.getItem('token') || '', []);
+  const token = localStorage.getItem('securevault_token') || localStorage.getItem('token') || '';
 
   const totalUsedBytes = useMemo(
     () => files.reduce((sum, file) => sum + (Number(file.file_size) || 0), 0),
     [files]
   );
 
-  const loadFiles = async (silent = false) => {
+  const loadFiles = useCallback(async (silent = false) => {
     if (!token) {
       setError('No active session found. Sign in and store JWT in localStorage (securevault_token).');
       setLoading(false);
@@ -49,11 +55,11 @@ const Files = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     loadFiles();
-  }, []);
+  }, [loadFiles]);
 
   const handleUpload = async () => {
     if (!selectedFile || !token) return;
@@ -169,7 +175,7 @@ const Files = () => {
               <div style={{ padding: '1.1rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
                 <h4 style={{ margin: '0 0 0.5rem 0', wordBreak: 'break-word', fontSize: '1rem' }}>{file.file_name}</h4>
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-dim)', fontSize: '0.8rem', marginBottom: '1rem' }}>
-                  <span style={{ fontFamily: 'monospace' }}>{new Date(file.created_at).toLocaleDateString()}</span>
+                  <span style={{ fontFamily: 'monospace' }}>{formatDate(file.created_at)}</span>
                   <span>{formatSize(Number(file.file_size))}</span>
                 </div>
 
