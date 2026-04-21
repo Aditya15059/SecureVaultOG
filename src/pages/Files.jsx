@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Download, Cloud, Eye, Trash2, HardDrive, UploadCloud, RefreshCcw, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { API_URL } from '../config/api';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const API_BASE = API_URL;
 
 const formatDate = (value) => {
   const date = new Date(value);
@@ -24,7 +25,7 @@ const Files = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [error, setError] = useState('');
 
-  const token = localStorage.getItem('securevault_token') || localStorage.getItem('token') || '';
+  const token = localStorage.getItem('securevault_token') || '';
 
   const totalUsedBytes = useMemo(
     () => files.reduce((sum, file) => sum + (Number(file.file_size) || 0), 0),

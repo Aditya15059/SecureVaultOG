@@ -5,6 +5,7 @@ import ParticleBackground from '../components/ParticleBackground';
 import { TypewriterText } from '../components/animations/TypewriterText';
 import { KineticButton } from '../components/animations/KineticButton';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_URL } from '../config/api';
 import './Login.css';
 
 const Login = () => {
@@ -77,7 +78,7 @@ const Login = () => {
     }
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     clearErrors();
 
@@ -116,56 +117,67 @@ const Login = () => {
       return;
     }
 
-    // --- SIMULATE AUTH LOGIC (no backend) ---
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-      // Demo logic: "admin@securevault.io" / "admin123" = success
-      // "unknown@test.com" = email not found
-      // Anything else = invalid credentials
-      if (email === 'admin@securevault.io' && password === 'admin123') {
-        // Success path
-        clearErrors();
-        setAttempts(0);
-        navigate('/dashboard');
-        return;
-      }
+      const data = await res.json().catch(() => ({}));
 
-      // --- SCENARIO 4: Email not found ---
-      if (email === 'unknown@test.com') {
-        setFieldErrors({ email: true, password: false });
-        setError('No account found with that email address.');
-        setErrorType('not-found');
-        triggerShake();
+      if (!res.ok) {
         setPassword('');
+        triggerShake();
+        setFieldErrors({ email: true, password: true });
+
+        if (res.status === 403 && data.lock_until) {
+          setLockUntil(new Date(data.lock_until).getTime());
+          setError(data.error || 'Account temporarily locked');
+          setErrorType('locked');
+          return;
+        }
+
+        if (res.status === 401 && typeof data.attempts_remaining === 'number') {
+          const newAttempts = Math.max(0, 5 - data.attempts_remaining);
+          setAttempts(newAttempts);
+          if (newAttempts >= 3) {
+            setError(`Invalid credentials. ${data.attempts_remaining} attempt${data.attempts_remaining !== 1 ? 's' : ''} remaining before your account is temporarily locked.`);
+            setErrorType('credentials-warning');
+          } else {
+            setError(data.error || 'Invalid credentials. Please check your email and password.');
+            setErrorType('credentials');
+          }
+          return;
+        }
+
+        if (res.status === 401 && String(data.error || '').toLowerCase().includes('no account')) {
+          setError('No account found with that email address.');
+          setErrorType('not-found');
+          setFieldErrors({ email: true, password: false });
+          return;
+        }
+
+        setError(data.error || 'Unable to login');
+        setErrorType('credentials');
         return;
       }
 
-      // --- SCENARIO 1/2/3: Wrong credentials (progressive) ---
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      setPassword('');
-      triggerShake();
-      setFieldErrors({ email: true, password: true });
-
-      if (newAttempts >= 5) {
-        // --- SCENARIO 3: Account locked ---
-        const lockTime = Date.now() + 15 * 60 * 1000; // 15 minutes
-        setLockUntil(lockTime);
-        setError('Account temporarily locked for 15 minutes. Reset your password or wait for unlock.');
-        setErrorType('locked');
-      } else if (newAttempts >= 3) {
-        // --- SCENARIO 2: Warning with remaining attempts ---
-        const remaining = 5 - newAttempts;
-        setError(`Invalid credentials. ${remaining} attempt${remaining !== 1 ? 's' : ''} remaining before your account is temporarily locked.`);
-        setErrorType('credentials-warning');
-      } else {
-        // --- SCENARIO 1: Standard invalid credentials ---
-        setError('Invalid credentials. Please check your email and password.');
-        setErrorType('credentials');
+      if (data.token) {
+        localStorage.setItem('securevault_token', data.token);
       }
-    }, 800);
+      clearErrors();
+      setAttempts(0);
+      navigate('/dashboard');
+    } catch {
+      setError('Unable to reach authentication server');
+      setErrorType('credentials');
+      setFieldErrors({ email: true, password: true });
+      triggerShake();
+    } finally {
+      setLoading(false);
+    }
   };
 
   const isLocked = lockUntil && Date.now() < lockUntil;

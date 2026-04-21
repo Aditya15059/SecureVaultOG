@@ -72,7 +72,7 @@ const uploadSingleFile = (req, res, next) => {
   });
 };
 
-router.post('/upload', uploadSingleFile, async (req, res, next) => {
+const uploadFileHandler = async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'File is required' });
@@ -109,7 +109,9 @@ router.post('/upload', uploadSingleFile, async (req, res, next) => {
   } catch (error) {
     return next(error);
   }
-});
+};
+
+router.post('/upload', uploadSingleFile, uploadFileHandler);
 
 /* ── Delete a file ── */
 router.delete('/:fileId', async (req, res) => {
@@ -135,3 +137,4 @@ router.delete('/:fileId', async (req, res) => {
 });
 
 export default router;
+export { uploadSingleFile, uploadFileHandler };

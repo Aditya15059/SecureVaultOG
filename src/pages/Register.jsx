@@ -5,11 +5,15 @@ import ParticleBackground from '../components/ParticleBackground';
 import { TypewriterText } from '../components/animations/TypewriterText';
 import { KineticButton } from '../components/animations/KineticButton';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_URL } from '../config/api';
 
 const Register = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [codename, setCodename] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,15 +22,55 @@ const Register = () => {
 
   const handleNext = (e) => {
     e.preventDefault();
+    setError('');
     setStep(2);
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
+    setError('');
+    if (!password || !confirmPassword || password !== confirmPassword) {
+      setError('Passwords must match');
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const registerRes = await fetch(`${API_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, codename }),
+      });
+      const registerData = await registerRes.json().catch(() => ({}));
+      if (!registerRes.ok) {
+        setError(registerData.error || 'Unable to create account');
+        return;
+      }
+
+      const loginRes = await fetch(`${API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const loginData = await loginRes.json().catch(() => ({}));
+      if (!loginRes.ok) {
+        setError('Account created. Please login.');
+        navigate('/login');
+        return;
+      }
+
+      if (!loginData.token) {
+        setError('Account created, but no session token returned. Please login manually.');
+        navigate('/login');
+        return;
+      }
+      localStorage.setItem('securevault_token', loginData.token);
       navigate('/dashboard');
-    }, 2000);
+    } catch {
+      setError('Unable to reach authentication server');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getStrength = (pass) => {
@@ -93,6 +137,9 @@ const Register = () => {
             </div>
           ))}
         </div>
+        {error && (
+          <p style={{ margin: '0 0 1rem 0', color: 'var(--color-danger)', fontSize: '0.875rem' }}>{error}</p>
+        )}
 
         <AnimatePresence mode="wait">
           {step === 1 ? (
@@ -101,7 +148,15 @@ const Register = () => {
                 <label>Master Codename</label>
                 <div style={{ position: 'relative' }}>
                   <User size={16} className="icon-cyber" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-dim)' }} />
-                  <input type="text" className="input-control" placeholder="operator_7" style={{ paddingLeft: '2.5rem', background: 'rgba(0,0,0,0.3)' }} required />
+                  <input
+                    type="text"
+                    className="input-control"
+                    placeholder="operator_7"
+                    style={{ paddingLeft: '2.5rem', background: 'rgba(0,0,0,0.3)' }}
+                    value={codename}
+                    onChange={(e) => setCodename(e.target.value)}
+                    required
+                  />
                 </div>
               </div>
 
@@ -109,7 +164,15 @@ const Register = () => {
                 <label>Secure Email</label>
                 <div style={{ position: 'relative' }}>
                   <Mail size={16} className="icon-cyber" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-dim)' }} />
-                  <input type="email" className="input-control" placeholder="operator@securevault.io" style={{ paddingLeft: '2.5rem', background: 'rgba(0,0,0,0.3)' }} required />
+                  <input
+                    type="email"
+                    className="input-control"
+                    placeholder="operator@securevault.io"
+                    style={{ paddingLeft: '2.5rem', background: 'rgba(0,0,0,0.3)' }}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </div>
               </div>
 
