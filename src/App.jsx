@@ -16,6 +16,7 @@ import ZynoStegra from './pages/ZynoStegra';
 import Security from './pages/Security';
 
 import Settings from './pages/Settings';
+import Files from './pages/Files';
 import DashboardLayout from './components/DashboardLayout';
 
 import Lenis from '@studio-freight/lenis';
@@ -78,6 +79,7 @@ function App() {
             <Route path="/about" element={<About />} />
             <Route path="/zynostegra" element={<ZynoStegra />} />
             <Route path="/security" element={<Security />} />
+            <Route path="/files" element={<Files />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
         </Routes>
