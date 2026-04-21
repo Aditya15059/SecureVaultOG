@@ -22,6 +22,8 @@ app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173', crede
 app.use(express.json({ limit: '1mb' }));
 
 // ── Routes ──
+app.get('/', (_req, res) => res.send('SecureVault API is running 🚀'));
+
 app.use('/api/auth',     authLimiter, authRouter);
 app.use('/api/sessions', apiLimiter,  sessionsRouter);
 app.use('/api/files',    apiLimiter,  filesRouter);
