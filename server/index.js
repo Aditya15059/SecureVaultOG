@@ -15,10 +15,20 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,https://secure-vault-og.vercel.app')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 // ── Security Middleware ──
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173', credentials: true }));
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '1mb' }));
 
 // ── Routes ──
@@ -27,6 +37,10 @@ app.get('/', (_req, res) => res.send('SecureVault API is running 🚀'));
 app.use('/api/auth',     authLimiter, authRouter);
 app.use('/api/sessions', apiLimiter,  sessionsRouter);
 app.use('/api/files',    apiLimiter,  filesRouter);
+app.post('/api/upload',  apiLimiter,  (req, res, next) => {
+  req.url = '/upload';
+  filesRouter(req, res, next);
+});
 app.use('/api/activity', apiLimiter,  activityRouter);
 app.use('/api/threats',  apiLimiter,  threatsRouter);
 app.use('/api/agent',    apiLimiter,  agentRouter);

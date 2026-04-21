@@ -4,6 +4,7 @@ import { KeyRound, Mail, ShieldCheck, ArrowLeft, Eye, EyeOff, Check, AlertTriang
 import ParticleBackground from '../components/ParticleBackground';
 import { KineticButton } from '../components/animations/KineticButton';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_URL } from '../config/api';
 import './ForgotPassword.css';
 
 // ===== EMAIL MASKING =====
@@ -35,6 +36,7 @@ const ForgotPassword = () => {
   const [email, setEmail] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
+  const [apiError, setApiError] = useState('');
 
   // Step 2 state
   const [otp, setOtp] = useState(Array(6).fill(''));
@@ -81,19 +83,32 @@ const ForgotPassword = () => {
   };
 
   // ===== STEP 1: Send email =====
-  const handleSendEmail = (e) => {
+  const handleSendEmail = async (e) => {
     e.preventDefault();
     setEmailError('');
+    setApiError('');
     if (!email) { setEmailError('Email address is required'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setEmailError('Please enter a valid email address'); return; }
 
     setEmailLoading(true);
-    setTimeout(() => {
-      setEmailLoading(false);
-      // Always succeed (security pattern: don't reveal if email exists)
+    try {
+      const res = await fetch(`${API_URL}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setApiError(data.error || 'Unable to send reset code');
+        return;
+      }
       goToStep(1);
       setResendTimer(60);
-    }, 1200);
+    } catch {
+      setApiError('Unable to reach authentication server');
+    } finally {
+      setEmailLoading(false);
+    }
   };
 
   // ===== STEP 2: OTP Input =====
@@ -131,20 +146,11 @@ const ForgotPassword = () => {
     setOtpLoading(true);
     setTimeout(() => {
       setOtpLoading(false);
-      // Demo: "123456" is valid code
-      if (code === '123456') {
-        setOtpSuccess(true);
-        setTimeout(() => {
-          goToStep(2);
-          setOtpSuccess(false);
-        }, 1000);
-      } else {
-        setOtpError('Invalid verification code. Please try again.');
-        setOtp(Array(6).fill(''));
-        setOtpShake(true);
-        setTimeout(() => setOtpShake(false), 600);
-        otpRefs.current[0].current?.focus();
-      }
+      setOtpSuccess(true);
+      setTimeout(() => {
+        goToStep(2);
+        setOtpSuccess(false);
+      }, 1000);
     }, 1000);
   };
 
@@ -160,16 +166,38 @@ const ForgotPassword = () => {
   const strength = getPasswordStrength(newPassword);
   const passwordsMatch = newPassword && confirmPassword && newPassword === confirmPassword;
 
-  const handleResetPassword = (e) => {
+  const handleResetPassword = async (e) => {
     e.preventDefault();
+    setApiError('');
     if (strength.score < 2) return;
     if (!passwordsMatch) return;
+    if (otp.join('').length < 6) {
+      setApiError('Please complete OTP verification first');
+      return;
+    }
 
     setResetLoading(true);
-    setTimeout(() => {
-      setResetLoading(false);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          otp: otp.join(''),
+          new_password: newPassword,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setApiError(data.error || 'Unable to reset password');
+        return;
+      }
       setResetSuccess(true);
-    }, 1500);
+    } catch {
+      setApiError('Unable to reach authentication server');
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   // Animation variants
@@ -209,6 +237,9 @@ const ForgotPassword = () => {
 
         {/* Step Content */}
         <div className="forgot-step-content">
+          {apiError && (
+            <p style={{ color: 'var(--color-danger)', margin: '0 0 1rem 0', textAlign: 'center', fontSize: '0.85rem' }}>{apiError}</p>
+          )}
           <AnimatePresence mode="wait" custom={direction}>
             {/* ===== STEP 1: ENTER EMAIL ===== */}
             {currentStep === 0 && (
