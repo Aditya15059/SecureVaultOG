@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { db } from '../db.js';
+import { sendWelcomeEmail, sendOtpEmail } from '../utils/mailer.js';
 
 const router = express.Router();
 const SALT_ROUNDS = 12;
@@ -10,14 +11,19 @@ const LOCK_MINUTES = 15;
 
 /* ── Register ── */
 router.post('/register', async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, codename } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
 
+  const username = (codename || '').trim() || null;
   const hash = await bcrypt.hash(password, SALT_ROUNDS);
   try {
     const [result] = await db.query(
-      'INSERT INTO users (email, password_hash) VALUES (?, ?)',
-      [email.toLowerCase().trim(), hash]
+      'INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)',
+      [email.toLowerCase().trim(), username, hash]
+    );
+    // Send welcome email (non-blocking — failure does not abort registration)
+    sendWelcomeEmail(email.toLowerCase().trim(), username).catch((err) =>
+      console.error('[SecureVault Mailer] Failed to send welcome email:', err.message)
     );
     res.status(201).json({ message: 'Account created', userId: result.insertId });
   } catch (err) {
@@ -92,7 +98,7 @@ router.post('/login', async (req, res) => {
     [ip, device, user.id]
   );
 
-  const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: '8h' });
+  const token = jwt.sign({ id: user.id, email: user.email, username: user.username, role: user.role }, process.env.JWT_SECRET, { expiresIn: '8h' });
 
   // Store session
   const [sessionResult] = await db.query(
@@ -105,7 +111,7 @@ router.post('/login', async (req, res) => {
     [user.id, ip, device]
   );
 
-  res.json({ token, session_id: sessionResult.insertId, user: { id: user.id, email: user.email, role: user.role } });
+  res.json({ token, session_id: sessionResult.insertId, user: { id: user.id, email: user.email, username: user.username, role: user.role } });
 });
 
 /* ── Logout (revoke session) ── */
@@ -132,8 +138,12 @@ router.post('/forgot-password', async (req, res) => {
     [rows[0].id, hash, expires]
   );
 
-  // In production: send OTP via email. Here we return it for demo.
-  res.json({ message: 'OTP sent', otp_demo: otp });
+  // Send OTP via email (non-blocking)
+  sendOtpEmail(email.toLowerCase().trim(), otp).catch((err) =>
+    console.error('[SecureVault Mailer] Failed to send OTP email:', err.message)
+  );
+
+  res.json({ message: 'OTP sent to your registered email address' });
 });
 
 const getLatestResetRecord = async (email) => {

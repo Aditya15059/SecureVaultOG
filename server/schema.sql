@@ -11,6 +11,7 @@ USE securevault;
 CREATE TABLE IF NOT EXISTS users (
     id               BIGINT AUTO_INCREMENT PRIMARY KEY,
     email            VARCHAR(255) UNIQUE NOT NULL,
+    username         VARCHAR(100),
     password_hash    VARCHAR(255)        NOT NULL,
     role             ENUM('admin','user') DEFAULT 'user',
 
@@ -118,3 +119,9 @@ CREATE TABLE IF NOT EXISTS password_resets (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_reset_user (user_id)
 );
+
+-- ─────────────────────────────────────────────
+-- Migration: add username to existing databases
+-- Safe to run multiple times (IF NOT EXISTS guard).
+-- ─────────────────────────────────────────────
+ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(100) AFTER email;
