@@ -30,7 +30,8 @@ export const sendWelcomeEmail = async (email, username) => {
 
   const displayName = username || email.split('@')[0];
 
-  await transporter.sendMail({
+  try {
+    await transporter.sendMail({
     from: FROM_ADDRESS,
     to: email,
     subject: '🔐 Welcome to SecureVault — Your Vault is Ready',
@@ -115,7 +116,11 @@ export const sendWelcomeEmail = async (email, username) => {
       </html>
     `,
     text: `Welcome to SecureVault, ${displayName}!\n\nYour vault has been created successfully.\n\nSecureVault provides AES-256 encrypted storage, zero-trust architecture, and real-time threat detection to keep your data safe.\n\n© ${new Date().getFullYear()} SecureVault`,
-  });
+    });
+  } catch (err) {
+    console.error('[SecureVault Mailer] sendWelcomeEmail error:', err.message);
+    throw err;
+  }
 };
 
 /* ── OTP email for password reset ── */
@@ -123,7 +128,8 @@ export const sendOtpEmail = async (email, otp) => {
   const transporter = createTransporter();
   if (!transporter) return;
 
-  await transporter.sendMail({
+  try {
+    await transporter.sendMail({
     from: FROM_ADDRESS,
     to: email,
     subject: '🔑 SecureVault — Your Password Reset Code',
@@ -214,5 +220,9 @@ export const sendOtpEmail = async (email, otp) => {
       </html>
     `,
     text: `SecureVault Password Reset\n\nYour one-time code is: ${otp}\n\nThis code expires in 10 minutes. Do not share it with anyone.\n\nIf you didn't request this, please ignore this email.\n\n© ${new Date().getFullYear()} SecureVault`,
-  });
+    });
+  } catch (err) {
+    console.error('[SecureVault Mailer] sendOtpEmail error:', err.message);
+    throw err;
+  }
 };
